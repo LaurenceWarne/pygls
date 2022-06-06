@@ -73,6 +73,7 @@ class ClientServer:
         self.client_thread.daemon = True
 
     def start(self):
+        ClientServer._to_stop.append(self)
         self.server_thread.start()
         self.server.thread_id = self.server_thread.ident
 
@@ -81,17 +82,10 @@ class ClientServer:
         self.initialize()
 
     def stop(self):
-        ClientServer._to_stop.append(self)
-
-    def _stop(self):
-        shutdown_response = (
-            self.client
-            .lsp.send_request(pygls.lsp.methods.SHUTDOWN)
-            .result(timeout=CALL_TIMEOUT)
-        )
-        assert shutdown_response is None
         # Exit the server
         self.client.lsp.notify(pygls.lsp.methods.EXIT)
+
+    def _stop(self):
         self.server_thread.join()
         # Exit the client
         self.client._stop_event.set()

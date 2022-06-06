@@ -16,6 +16,7 @@
 ############################################################################
 import json
 from concurrent.futures import Future
+from concurrent.futures._base import TimeoutError
 from functools import partial
 from pathlib import Path
 from typing import Optional
@@ -26,6 +27,7 @@ import pytest
 from pygls.exceptions import JsonRpcException, JsonRpcInvalidParams
 from pygls.lsp import Model, get_method_params_type
 from pygls.lsp.types import ClientCapabilities, InitializeParams, InitializeResult
+from pygls.lsp.methods import SHUTDOWN
 from pygls.protocol import JsonRPCNotification, JsonRPCRequestMessage, JsonRPCResponseMessage
 from pygls.protocol import deserialize_message as _deserialize_message
 
@@ -279,3 +281,10 @@ def test_ignore_unknown_notification(client_server):
     # Remove mock
     server.lsp._execute_notification = fn
 
+
+def test_timeout_raises_error(client_server):
+    client, _ = client_server
+    with pytest.raises(TimeoutError):
+        client.lsp.send_request(
+            SHUTDOWN
+        ).result(timeout=1e-50)
